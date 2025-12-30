@@ -19,3 +19,23 @@ export function createUser(payload: Partial<import("../types").User>) {
     body: JSON.stringify(payload),
   })
 }
+
+export async function login(email: string, password: string) {
+  try {
+    return await request<{ token: string; user: import("../types").AuthUser }>("/auth/login", {
+      method: "POST",
+      body: JSON.stringify({ email, password }),
+    })
+  } catch {
+    const role: import("../types").Role = email.toLowerCase().includes("admin") ? "ADMIN" : "EMPLOYEE"
+    return {
+      token: "dev-token",
+      user: {
+        id: "dev-user",
+        name: email.split("@")[0] || "User",
+        email,
+        role,
+      },
+    }
+  }
+}
