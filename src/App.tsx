@@ -1,9 +1,12 @@
 import { useAuth } from "./auth/AuthContext"
+import { useState } from "react"
 import Login from "./pages/Login"
 import DashboardEmployee from "./pages/DashboardEmployee"
+import AttendanceHistory from "./pages/AttendanceHistory"
 
 function App() {
   const { auth, logout } = useAuth()
+  const [view, setView] = useState<"dashboard" | "history">("dashboard")
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -19,11 +22,15 @@ function App() {
               Keluar
             </button>
           </div>
-          <DashboardEmployee
-            onGoRiwayat={() => {
-              alert("Riwayat Absen (akan diarahkan ke halaman Riwayat)")
-            }}
-          />
+          {view === "dashboard" ? (
+            <DashboardEmployee
+              onGoRiwayat={() => {
+                setView("history")
+              }}
+            />
+          ) : (
+            <AttendanceHistory />
+          )}
         </div>
       ) : (
         <div className="p-6">

@@ -17,3 +17,12 @@ export type AttendanceToday = {
   checkInTime?: string
   photoUrl?: string
 }
+
+export type AttendanceRecord = {
+  date: string
+  checkInTime?: string
+  status: "PRESENT_ON_TIME" | "PRESENT_LATE" | "ABSENT"
+  lateMinutes?: number
+  photoUrl?: string
+  notes?: string
+}
