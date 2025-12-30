@@ -11,3 +11,9 @@ export type AuthUser = {
   email: string
   role: Role
 }
+
+export type AttendanceToday = {
+  status: "ABSENT" | "PRESENT"
+  checkInTime?: string
+  photoUrl?: string
+}

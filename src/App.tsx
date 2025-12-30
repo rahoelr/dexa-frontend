@@ -1,5 +1,6 @@
 import { useAuth } from "./auth/AuthContext"
 import Login from "./pages/Login"
+import DashboardEmployee from "./pages/DashboardEmployee"
 
 function App() {
   const { auth, logout } = useAuth()
@@ -9,25 +10,23 @@ function App() {
       {!auth.user ? (
         <Login />
       ) : auth.user.role === "EMPLOYEE" ? (
-        <div className="p-6">
-          <header className="flex items-center justify-between">
-            <h1 className="text-xl font-semibold">Dashboard Karyawan</h1>
+        <div>
+          <div className="p-3 flex justify-end">
             <button
               onClick={logout}
               className="px-3 py-1.5 bg-gray-200 rounded hover:bg-gray-300"
             >
               Keluar
             </button>
-          </header>
-          <main className="mt-6">
-            <div className="rounded-lg border bg-white p-4">
-              <p>Selamat datang, {auth.user.name}.</p>
-              <p className="mt-2 text-sm text-gray-600">
-                Ini placeholder dashboard. Setelah login siap, kita tambahkan halaman Absen WFH dan
-                Riwayat.
-              </p>
-            </div>
-          </main>
+          </div>
+          <DashboardEmployee
+            onGoAbsen={() => {
+              alert("Absen WFH (akan diarahkan ke halaman Absen)")
+            }}
+            onGoRiwayat={() => {
+              alert("Riwayat Absen (akan diarahkan ke halaman Riwayat)")
+            }}
+          />
         </div>
       ) : (
         <div className="p-6">

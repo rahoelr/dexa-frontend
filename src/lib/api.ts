@@ -39,3 +39,13 @@ export async function login(email: string, password: string) {
     }
   }
 }
+
+export async function getAttendanceToday() {
+  try {
+    return await request<import("../types").AttendanceToday>("/attendance/today")
+  } catch {
+    return {
+      status: "ABSENT",
+    } as import("../types").AttendanceToday
+  }
+}
