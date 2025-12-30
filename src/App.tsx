@@ -20,9 +20,6 @@ function App() {
             </button>
           </div>
           <DashboardEmployee
-            onGoAbsen={() => {
-              alert("Absen WFH (akan diarahkan ke halaman Absen)")
-            }}
             onGoRiwayat={() => {
               alert("Riwayat Absen (akan diarahkan ke halaman Riwayat)")
             }}

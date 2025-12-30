@@ -14,4 +14,5 @@ ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
 
 if (import.meta.env.DEV) {
   import("./test/manual/loginValidation.test")
+  import("./test/manual/attendanceDummy.test")
 }
