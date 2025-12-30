@@ -1,5 +1,5 @@
 import { listDatesInRange, toRecord } from "../utils/attendanceCalc"
-import { readToday } from "../utils/attendanceLocal"
+import { readAttendanceToday } from "../utils/attendanceToday"
 import type { AttendanceRecord } from "../types"
 
 export type ListAttendanceFilters = {
@@ -14,9 +14,12 @@ export function listAttendanceDummy(filters: ListAttendanceFilters) {
   const { startDate, endDate, status = "ALL", page = 1, pageSize = 10 } = filters
   const dates = listDatesInRange(startDate, endDate)
 
-  const todayData = readToday()
-  const today = todayData
-    ? toRecord(new Date().toISOString().slice(0, 10), todayData.checkInTime, todayData.photoUrl)
+  const todayModel = readAttendanceToday()
+  const today = todayModel
+    ? {
+        ...toRecord(new Date().toISOString().slice(0, 10), todayModel.checkIn, todayModel.photoUrl, todayModel.description),
+        checkOutTime: todayModel.checkOut,
+      }
     : null
 
   const records: AttendanceRecord[] = dates.map((d) => {
@@ -24,8 +27,7 @@ export function listAttendanceDummy(filters: ListAttendanceFilters) {
     return toRecord(d) // ABSENT
   })
 
-  const filtered =
-    status === "ALL" ? records : records.filter((r) => r.status === status || (status === "PRESENT" && r.status.startsWith("PRESENT")))
+  const filtered = status === "ALL" ? records : records.filter((r) => r.status === status)
 
   const total = filtered.length
   const startIdx = (page - 1) * pageSize
@@ -35,4 +37,3 @@ export function listAttendanceDummy(filters: ListAttendanceFilters) {
     pagination: { page, pageSize, total },
   }
 }
-

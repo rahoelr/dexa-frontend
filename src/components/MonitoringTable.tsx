@@ -1,24 +1,24 @@
-import type { AttendanceRecord } from "../types"
+import type { AttendanceAdminRecord } from "../types"
 
-function StatusBadge({ status }: { status: AttendanceRecord["status"] }) {
-  const map: Record<AttendanceRecord["status"], string> = {
-    PRESENT_ON_TIME: "bg-green-100 text-green-800",
-    PRESENT_LATE: "bg-yellow-100 text-yellow-800",
+function StatusBadge({ status }: { status: AttendanceAdminRecord["status"] }) {
+  const map: Record<AttendanceAdminRecord["status"], string> = {
+    ON_TIME: "bg-green-100 text-green-800",
+    LATE: "bg-yellow-100 text-yellow-800",
     ABSENT: "bg-red-100 text-red-800",
   }
-  const label: Record<AttendanceRecord["status"], string> = {
-    PRESENT_ON_TIME: "Tepat Waktu",
-    PRESENT_LATE: "Terlambat",
+  const label: Record<AttendanceAdminRecord["status"], string> = {
+    ON_TIME: "Tepat Waktu",
+    LATE: "Terlambat",
     ABSENT: "Absen",
   }
   return <span className={`px-2 py-1 rounded text-xs ${map[status]}`}>{label[status]}</span>
 }
 
-export default function AttendanceTable({
+export default function MonitoringTable({
   records,
   onOpenPhoto,
 }: {
-  records: AttendanceRecord[]
+  records: AttendanceAdminRecord[]
   onOpenPhoto: (src: string) => void
 }) {
   return (
@@ -26,9 +26,11 @@ export default function AttendanceTable({
       <table className="w-full text-left">
         <thead className="bg-gray-50">
           <tr>
+            <th className="px-4 py-2">Nama</th>
+            <th className="px-4 py-2">NIP</th>
+            <th className="px-4 py-2">Departemen</th>
             <th className="px-4 py-2">Tanggal</th>
-            <th className="px-4 py-2">Check-In</th>
-            <th className="px-4 py-2">Check-Out</th>
+            <th className="px-4 py-2">Jam</th>
             <th className="px-4 py-2">Status</th>
             <th className="px-4 py-2">Keterlambatan</th>
             <th className="px-4 py-2">Foto</th>
@@ -37,14 +39,12 @@ export default function AttendanceTable({
         </thead>
         <tbody>
           {records.map((r) => (
-            <tr key={r.date} className="border-t">
+            <tr key={`${r.employee.id}-${r.date}`} className="border-t">
+              <td className="px-4 py-2">{r.employee.name}</td>
+              <td className="px-4 py-2">{r.employee.nip}</td>
+              <td className="px-4 py-2">{r.employee.department}</td>
               <td className="px-4 py-2">{r.date}</td>
-              <td className="px-4 py-2">
-                {r.checkInTime ? new Date(r.checkInTime).toLocaleTimeString() : "-"}
-              </td>
-              <td className="px-4 py-2">
-                {r.checkOutTime ? new Date(r.checkOutTime).toLocaleTimeString() : "-"}
-              </td>
+              <td className="px-4 py-2">{r.checkIn ? new Date(r.checkIn).toLocaleTimeString() : "-"}</td>
               <td className="px-4 py-2">
                 <StatusBadge status={r.status} />
               </td>
@@ -61,7 +61,7 @@ export default function AttendanceTable({
                   "-"
                 )}
               </td>
-              <td className="px-4 py-2">{r.notes || "-"}</td>
+              <td className="px-4 py-2">{r.description || "-"}</td>
             </tr>
           ))}
         </tbody>

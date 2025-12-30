@@ -3,8 +3,8 @@ import { useAuth } from "../auth/AuthContext"
 import CardStat from "../components/CardStat"
 import UploadFoto from "../components/UploadFoto"
 import ResultCard from "../components/ResultCard"
-import { readToday, writeToday } from "../utils/attendanceLocal"
-import type { AttendanceToday } from "../types"
+import { readAttendanceToday, writeAttendanceToday } from "../utils/attendanceToday"
+import type { Attendance, AttendanceStatus } from "../types"
 
 export default function DashboardEmployee({
   onGoRiwayat,
@@ -14,7 +14,7 @@ export default function DashboardEmployee({
   const { auth } = useAuth()
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [data, setData] = useState<AttendanceToday | null>(null)
+  const [data, setData] = useState<Attendance | null>(null)
   const [photoFile, setPhotoFile] = useState<File | null>(null)
   const [photoPreview, setPhotoPreview] = useState<string | null>(null)
   const [notes, setNotes] = useState("")
@@ -25,7 +25,7 @@ export default function DashboardEmployee({
     let mounted = true
     try {
       setLoading(true)
-      const res = readToday()
+      const res = readAttendanceToday()
       if (mounted) setData(res)
     } catch {
       if (mounted) setError("Gagal memuat status absensi")
@@ -38,12 +38,20 @@ export default function DashboardEmployee({
   }, [])
 
   const statValue =
-    loading ? "Memuat..." : error ? "Error" : data?.status === "PRESENT" ? "Hadir" : "Belum Absen"
+    loading
+      ? "Memuat..."
+      : error
+      ? "Error"
+      : data?.status === "ON_TIME"
+      ? "Hadir Tepat Waktu"
+      : data?.status === "LATE"
+      ? "Terlambat"
+      : "Belum Absen"
   const statDesc =
     loading
       ? "Mengambil status terbaru"
-      : data?.status === "PRESENT" && data?.checkInTime
-      ? `Check-in: ${data.checkInTime}`
+      : data?.checkIn
+      ? `Check-in: ${data.checkIn}`
       : undefined
 
   async function fileToDataUrl(file: File): Promise<string> {
@@ -58,7 +66,7 @@ export default function DashboardEmployee({
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault()
     setSubmitError(null)
-    if (data?.status === "PRESENT") {
+    if (data && data.status !== "ABSENT") {
       setSubmitError("Anda sudah absen hari ini")
       setSubmitStatus("error")
       return
@@ -71,15 +79,34 @@ export default function DashboardEmployee({
     try {
       setSubmitStatus("loading")
       const photoUrl = await fileToDataUrl(photoFile)
-      const checkInTime = new Date().toISOString()
-      const payload: AttendanceToday = { status: "PRESENT", checkInTime, photoUrl }
-      writeToday(payload)
+      const nowIso = new Date().toISOString()
+      const status: AttendanceStatus = new Date(nowIso).getHours() < 9 ? "ON_TIME" : "LATE"
+      const payload: Attendance = {
+        id: Date.now(),
+        userId: 1,
+        date: nowIso.slice(0, 10),
+        checkIn: nowIso,
+        photoUrl,
+        status,
+        description: notes || undefined,
+        createdAt: nowIso,
+      }
+      writeAttendanceToday(payload)
       setData(payload)
       setSubmitStatus("success")
     } catch {
       setSubmitError("Gagal menyimpan absensi")
       setSubmitStatus("error")
     }
+  }
+
+  function onCheckout() {
+    if (!data || !data.checkIn) return
+    if (data.checkOut) return
+    const nowIso = new Date().toISOString()
+    const updated: Attendance = { ...data, checkOut: nowIso }
+    writeAttendanceToday(updated)
+    setData(updated)
   }
 
   return (
@@ -94,7 +121,7 @@ export default function DashboardEmployee({
         <section>
           <CardStat title="Status Hari Ini" value={statValue} description={statDesc} />
         </section>
-        {data?.status !== "PRESENT" ? (
+        {data?.status === "ABSENT" || !data ? (
           <section>
             <form className="space-y-4" onSubmit={onSubmit}>
               <div className="rounded-lg border bg-white p-4 space-y-4">
@@ -136,7 +163,13 @@ export default function DashboardEmployee({
           </section>
         ) : (
           <section>
-            <ResultCard checkInTime={data.checkInTime!} photoUrl={data.photoUrl || photoPreview || undefined} />
+            <ResultCard
+              checkInTime={data.checkIn!}
+              checkOutTime={data.checkOut}
+              photoUrl={data.photoUrl || photoPreview || undefined}
+              onCheckout={onCheckout}
+              canCheckout={!!data.checkIn}
+            />
             <div className="mt-3">
               <button
                 type="button"
