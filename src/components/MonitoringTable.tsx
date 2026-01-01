@@ -30,7 +30,6 @@ export default function MonitoringTable({
             <th className="px-4 py-2">Tanggal</th>
             <th className="px-4 py-2">Jam</th>
             <th className="px-4 py-2">Status</th>
-            <th className="px-4 py-2">Keterlambatan</th>
             <th className="px-4 py-2">Foto</th>
             <th className="px-4 py-2">Catatan</th>
           </tr>
@@ -44,7 +43,6 @@ export default function MonitoringTable({
               <td className="px-4 py-2">
                 <StatusBadge status={r.status} />
               </td>
-              <td className="px-4 py-2">{r.lateMinutes ? `${r.lateMinutes} menit` : "-"}</td>
               <td className="px-4 py-2">
                 {r.photoUrl ? (
                   <img

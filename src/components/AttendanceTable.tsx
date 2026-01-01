@@ -30,7 +30,6 @@ export default function AttendanceTable({
             <th className="px-4 py-2">Check-In</th>
             <th className="px-4 py-2">Check-Out</th>
             <th className="px-4 py-2">Status</th>
-            <th className="px-4 py-2">Keterlambatan</th>
             <th className="px-4 py-2">Foto</th>
             <th className="px-4 py-2">Catatan</th>
           </tr>
@@ -48,7 +47,6 @@ export default function AttendanceTable({
               <td className="px-4 py-2">
                 <StatusBadge status={r.status} />
               </td>
-              <td className="px-4 py-2">{r.lateMinutes ? `${r.lateMinutes} menit` : "-"}</td>
               <td className="px-4 py-2">
                 {r.photoUrl ? (
                   <img
