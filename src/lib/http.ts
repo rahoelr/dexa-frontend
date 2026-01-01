@@ -23,7 +23,11 @@ http.interceptors.response.use(
   (res) => res,
   (err) => {
     const status = err?.response?.status
-    if (status === 401) {
+    const url: string | undefined = err?.config?.url
+    const headers: any = err?.config?.headers
+    const hasAuthHeader = !!headers?.Authorization
+    const isLoginEndpoint = typeof url === "string" && url.includes("/auth/login")
+    if (status === 401 && hasAuthHeader && !isLoginEndpoint) {
       try {
         localStorage.removeItem("auth")
       } catch {}
