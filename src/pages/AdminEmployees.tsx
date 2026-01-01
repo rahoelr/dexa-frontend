@@ -15,6 +15,7 @@ export default function AdminEmployees() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [employees, setEmployees] = useState<import("../types").AdminEmployee[]>([])
+  const [allEmployees, setAllEmployees] = useState<import("../types").AdminEmployee[]>([])
   const [total, setTotal] = useState(0)
   const [toast, setToast] = useState<{ type: "success" | "error" | "info"; message: string } | null>(null)
   const [confirmSoftId, setConfirmSoftId] = useState<number | null>(null)
@@ -24,16 +25,16 @@ export default function AdminEmployees() {
   useEffect(() => {
     refetch()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page])
+  }, [])
 
   function refetch() {
     ;(async () => {
       try {
         setLoading(true)
         setError(null)
-        const res = await listEmployees({ search, page, limit: pageSize })
-        setEmployees(res.items)
-        setTotal(res.total)
+        const res = await listEmployees({ page: 1, limit: 1000 })
+        setAllEmployees(res.items)
+        applyFilterAndPaginate(res.items, search, page, pageSize)
       } catch (e: any) {
         const status: number | undefined = e?.response?.status
         if (status === 403) {
@@ -45,6 +46,27 @@ export default function AdminEmployees() {
         setLoading(false)
       }
     })()
+  }
+
+  function applyFilterAndPaginate(
+    source: import("../types").AdminEmployee[],
+    q: string,
+    p: number,
+    size: number
+  ) {
+    const term = q.trim().toLowerCase()
+    const filtered = term
+      ? source.filter((e) => {
+          const name = e.name?.toLowerCase() || ""
+          const email = e.email?.toLowerCase() || ""
+          return name.includes(term) || email.includes(term)
+        })
+      : source
+    const totalItems = filtered.length
+    const start = (p - 1) * size
+    const pageItems = filtered.slice(start, start + size)
+    setEmployees(pageItems)
+    setTotal(totalItems)
   }
 
   function handleSoftDelete(id: number) {
@@ -104,13 +126,11 @@ export default function AdminEmployees() {
                 className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 value={search}
                 onChange={(e) => {
-                  setSearch(e.target.value)
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    setPage(1)
-                    refetch()
-                  }
+                  const value = e.target.value
+                  const nextPage = 1
+                  setSearch(value)
+                  setPage(nextPage)
+                  applyFilterAndPaginate(allEmployees, value, nextPage, pageSize)
                 }}
                 placeholder="Misal: Alice atau alice@example.com"
               />
@@ -198,7 +218,15 @@ export default function AdminEmployees() {
                 </tbody>
               </table>
             </div>
-            <Pagination page={page} pageSize={pageSize} total={total} onChange={setPage} />
+            <Pagination
+              page={page}
+              pageSize={pageSize}
+              total={total}
+              onChange={(newPage) => {
+                setPage(newPage)
+                applyFilterAndPaginate(allEmployees, search, newPage, pageSize)
+              }}
+            />
           </>
         )}
       </main>

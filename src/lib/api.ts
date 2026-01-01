@@ -66,6 +66,35 @@ export async function checkOut(payload: { description?: string }) {
   return data
 }
 
+export async function getAdminAttendance(params: {
+  from: string
+  to: string
+  page?: number
+  pageSize?: number
+  userId?: number
+}) {
+  const { from, to, page = 1, pageSize = 20, userId } = params
+  const { data } = await http.get<{
+    items: import("../types").Attendance[]
+    page: number
+    pageSize: number
+    total: number
+  }>("/admin/attendance", {
+    params: { from, to, page, pageSize, userId },
+  })
+  return data
+}
+
+export async function getAdminAttendanceToday() {
+  const { data } = await http.get<{
+    items: import("../types").Attendance[]
+    page: number
+    pageSize: number
+    total: number
+  }>("/admin/attendance/today")
+  return data
+}
+
 export async function listEmployees(params: { search?: string; page?: number; limit?: number }) {
   const { search = "", page = 1, limit = 10 } = params || {}
   const { data } = await http.get<import("../types").EmployeesList>("/employees", {

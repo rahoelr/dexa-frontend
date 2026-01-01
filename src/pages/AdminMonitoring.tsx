@@ -1,12 +1,11 @@
 import { useEffect, useState } from "react"
 import DateRangePicker from "../components/DateRangePicker"
 import StatusFilter, { StatusFilterValue } from "../components/StatusFilter"
-import EmployeeFilter from "../components/EmployeeFilter"
 import MonitoringTable from "../components/MonitoringTable"
 import Pagination from "../components/Pagination"
 import PhotoModal from "../components/PhotoModal"
 import CardStat from "../components/CardStat"
-import { listAttendanceAdmin, listDepartments } from "../lib/adminDummy"
+import { getAdminAttendance, getEmployee } from "../lib/api"
 import { summarize } from "../utils/adminSummary"
 import type { AttendanceAdminRecord } from "../types"
 
@@ -18,8 +17,6 @@ export default function AdminMonitoring() {
   const [startDate, setStartDate] = useState(todayStr())
   const [endDate, setEndDate] = useState(todayStr())
   const [status, setStatus] = useState<StatusFilterValue>("ALL")
-  const [department, setDepartment] = useState("")
-  const [search, setSearch] = useState("")
   const [page, setPage] = useState(1)
   const [pageSize] = useState(10)
   const [loading, setLoading] = useState(false)
@@ -27,43 +24,70 @@ export default function AdminMonitoring() {
   const [records, setRecords] = useState<AttendanceAdminRecord[]>([])
   const [total, setTotal] = useState(0)
   const [photoSrc, setPhotoSrc] = useState<string | null>(null)
-  const [departments, setDepartments] = useState<string[]>([])
-
-  useEffect(() => {
-    setDepartments(listDepartments())
-  }, [])
 
   function refetch() {
-    try {
-      setLoading(true)
-      setError(null)
-      const res = listAttendanceAdmin({
-        startDate,
-        endDate,
-        status:
-          status === "PRESENT_ON_TIME"
-            ? "ON_TIME"
-            : status === "PRESENT_LATE"
-            ? "LATE"
-            : status,
-        department: department || undefined,
-        search,
-        page,
-        pageSize,
-      })
-      setRecords(res.data)
-      setTotal(res.pagination.total)
-    } catch {
-      setError("Gagal memuat data monitoring")
-    } finally {
-      setLoading(false)
-    }
+    ;(async () => {
+      try {
+        setLoading(true)
+        setError(null)
+        const res = await getAdminAttendance({
+          from: startDate,
+          to: endDate,
+          page,
+          pageSize,
+        })
+        const items = res.items
+        const uniqUserIds = Array.from(new Set(items.map((it) => it.userId)))
+        const cache = new Map<number, { id: number; name: string; email: string }>()
+        for (const uid of uniqUserIds) {
+          try {
+            const emp = await getEmployee(uid)
+            cache.set(uid, { id: emp.id, name: emp.name, email: emp.email })
+          } catch {
+            cache.set(uid, { id: uid, name: `User ${uid}`, email: "-" })
+          }
+        }
+        const mapped: AttendanceAdminRecord[] = items
+          .filter((it) => {
+            if (status === "ALL") return true
+            if (status === "PRESENT_ON_TIME") return it.status === "ON_TIME"
+            if (status === "PRESENT_LATE") return it.status === "LATE"
+            return it.status === "ABSENT"
+          })
+          .map((it) => {
+            const emp = cache.get(it.userId)
+            const employee = {
+              id: String(emp?.id ?? it.userId),
+              name: emp?.name ?? `User ${it.userId}`,
+              nip: "-",
+              department: "-",
+              position: undefined,
+            }
+            return {
+              date: it.date.slice(0, 10),
+              checkIn: it.checkIn,
+              checkOut: it.checkOut,
+              status: it.status,
+              lateMinutes: undefined,
+              photoUrl: it.photoUrl,
+              description: it.description,
+              employee,
+            }
+          })
+        setRecords(mapped)
+        setTotal(res.total)
+      } catch {
+        setError("Gagal memuat data monitoring")
+      } finally {
+        setLoading(false)
+      }
+    })()
   }
 
   useEffect(() => {
     refetch()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [startDate, endDate, status, department, search, page])
+  }, [startDate, endDate, status, page])
 
   const summary = summarize(records)
 
@@ -71,10 +95,10 @@ export default function AdminMonitoring() {
     <div className="p-6">
       <header>
         <h1 className="text-xl font-semibold">Monitoring Absensi Karyawan</h1>
-        <p className="text-sm text-gray-600">Pantau kehadiran berdasarkan tanggal, departemen, dan status.</p>
+        <p className="text-sm text-gray-600">Pantau kehadiran berdasarkan tanggal dan status.</p>
       </header>
       <main className="mt-6 space-y-6">
-        <section className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <section className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <DateRangePicker
             startDate={startDate}
             endDate={endDate}
@@ -88,16 +112,6 @@ export default function AdminMonitoring() {
             value={status}
             onChange={(v) => {
               setStatus(v)
-              setPage(1)
-            }}
-          />
-          <EmployeeFilter
-            departmentOptions={departments}
-            department={department}
-            search={search}
-            onChange={(next) => {
-              setDepartment(next.department)
-              setSearch(next.search)
               setPage(1)
             }}
           />

@@ -27,8 +27,6 @@ export default function MonitoringTable({
         <thead className="bg-gray-50">
           <tr>
             <th className="px-4 py-2">Nama</th>
-            <th className="px-4 py-2">NIP</th>
-            <th className="px-4 py-2">Departemen</th>
             <th className="px-4 py-2">Tanggal</th>
             <th className="px-4 py-2">Jam</th>
             <th className="px-4 py-2">Status</th>
@@ -41,8 +39,6 @@ export default function MonitoringTable({
           {records.map((r) => (
             <tr key={`${r.employee.id}-${r.date}`} className="border-t">
               <td className="px-4 py-2">{r.employee.name}</td>
-              <td className="px-4 py-2">{r.employee.nip}</td>
-              <td className="px-4 py-2">{r.employee.department}</td>
               <td className="px-4 py-2">{r.date}</td>
               <td className="px-4 py-2">{r.checkIn ? new Date(r.checkIn).toLocaleTimeString() : "-"}</td>
               <td className="px-4 py-2">
