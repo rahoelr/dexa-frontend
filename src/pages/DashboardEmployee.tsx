@@ -7,6 +7,7 @@ import { getMyAttendance, checkIn, checkOut } from "../lib/api"
 import type { Attendance, AttendanceStatus } from "../types"
 import BackButton from "../components/BackButton"
 
+
 export default function DashboardEmployee({
   onGoRiwayat,
 }: {
@@ -67,15 +68,6 @@ export default function DashboardEmployee({
       ? `Check-in: ${data.checkIn}`
       : undefined
 
-  async function fileToDataUrl(file: File): Promise<string> {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader()
-      reader.onload = () => resolve(reader.result as string)
-      reader.onerror = reject
-      reader.readAsDataURL(file)
-    })
-  }
-
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault()
     setSubmitError(null)
@@ -86,13 +78,37 @@ export default function DashboardEmployee({
     }
     try {
       setSubmitStatus("loading")
-      const photoUrl = photoFile ? await fileToDataUrl(photoFile) : undefined
-      const res = await checkIn({ photoUrl, description: notes || undefined })
+      try {
+        console.log(
+          JSON.stringify({
+            tag: "frontend-check-in-submit",
+            file: photoFile ? { name: photoFile.name, type: photoFile.type, size: photoFile.size } : undefined,
+            descriptionLen: (notes || "").length,
+          })
+        )
+      } catch {}
+      const res = await checkIn(
+        photoFile
+          ? { photo: photoFile, description: notes || undefined }
+          : { description: notes || undefined }
+      )
       setData(res)
       setSubmitStatus("success")
     } catch (e: any) {
       const status = e?.response?.status
-      if (status === 409) {
+      try {
+        console.log(
+          JSON.stringify({
+            tag: "frontend-check-in-error",
+            status,
+            message: e?.response?.data?.message || e?.message || "unknown",
+            data: e?.response?.data,
+          })
+        )
+      } catch {}
+      if (status === 400) {
+        setSubmitError("Data tidak valid atau foto terlalu besar")
+      } else if (status === 409) {
         setSubmitError("Anda sudah check-in hari ini")
       } else if (status === 401) {
         setSubmitError("Sesi berakhir, silakan login ulang")
@@ -129,8 +145,8 @@ export default function DashboardEmployee({
   }
 
   return (
-    <div className="p-6">
-      <header className="flex items-center justify-between">
+    <div className="px-4 sm:px-6 py-6 max-w-screen-md mx-auto">
+      <header className="flex flex-wrap items-start sm:items-center justify-between gap-3">
         <div>
           <h1 className="text-xl font-semibold">Dashboard Karyawan</h1>
           <p className="text-sm text-gray-600">Selamat datang, {auth.user?.name}.</p>
@@ -176,7 +192,7 @@ export default function DashboardEmployee({
                   disabled={submitStatus === "loading"}
                   className="px-4 py-2 rounded-md bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-50"
                 >
-                  {submitStatus === "loading" ? "Memproses..." : "Submit Absen"}
+                  {submitStatus === "loading" ? "Mengirim..." : "Submit Absen"}
                 </button>
               </div>
             </form>

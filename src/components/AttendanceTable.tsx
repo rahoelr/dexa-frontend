@@ -1,5 +1,8 @@
 import type { AttendanceRecord } from "../types"
 
+const FALLBACK_IMG =
+  'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48"><rect width="100%" height="100%" fill="%23ddd"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" font-family="sans-serif" font-size="10" fill="%23666">No Photo</text></svg>'
+
 function StatusBadge({ status }: { status: AttendanceRecord["status"] }) {
   const map: Record<AttendanceRecord["status"], string> = {
     PRESENT_ON_TIME: "bg-green-100 text-green-800",
@@ -52,7 +55,21 @@ export default function AttendanceTable({
                   <img
                     src={r.photoUrl}
                     alt="Foto"
+                    loading="lazy"
                     className="h-12 w-12 object-cover rounded border cursor-pointer"
+                    onError={(ev) => {
+                      try {
+                        console.log(
+                          JSON.stringify({
+                            tag: "frontend-photo-error",
+                            src: r.photoUrl,
+                            date: r.date,
+                          })
+                        )
+                      } catch {}
+                      ;(ev.currentTarget as HTMLImageElement).onerror = null
+                      ;(ev.currentTarget as HTMLImageElement).src = FALLBACK_IMG
+                    }}
                     onClick={() => onOpenPhoto(r.photoUrl!)}
                   />
                 ) : (

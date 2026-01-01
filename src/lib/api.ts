@@ -56,8 +56,30 @@ export async function getMyAttendance(params: {
   return data
 }
 
-export async function checkIn(payload: { photoUrl?: string; description?: string }) {
-  const { data } = await http.post<import("../types").Attendance>("/attendance/check-in", payload)
+export async function checkIn(payload: { photo?: File | Blob; description?: string }) {
+  if (payload.photo) {
+    const form = new FormData()
+    form.append("file", payload.photo)
+    form.append("description", payload.description || "")
+    try {
+      const meta =
+        payload.photo instanceof File
+          ? { name: payload.photo.name, type: payload.photo.type, size: payload.photo.size }
+          : { type: (payload.photo as any)?.type || "unknown", size: (payload.photo as any)?.size || 0 }
+      console.log(
+        JSON.stringify({
+          tag: "frontend-check-in-formdata",
+          descriptionLen: (payload.description || "").length,
+          file: meta,
+        })
+      )
+    } catch {}
+    const { data } = await http.post<import("../types").Attendance>("/attendance/check-in", form)
+    return data
+  }
+  const { data } = await http.post<import("../types").Attendance>("/attendance/check-in", {
+    description: payload.description || undefined,
+  })
   return data
 }
 

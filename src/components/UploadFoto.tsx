@@ -19,7 +19,7 @@ export default function UploadFoto({
 
   function validate(file: File): string | null {
     if (!ACCEPT.includes(file.type)) return "Foto harus JPEG atau PNG"
-    if (file.size > MAX_SIZE) return "Ukuran foto maksimal 5MB"
+    if (file.size > MAX_SIZE) return "Ukuran file maksimal 5MB"
     return null
   }
 
@@ -74,4 +74,3 @@ export default function UploadFoto({
     </div>
   )
 }
-
