@@ -165,7 +165,7 @@ export default function AdminOverview() {
             <p className="mt-2 text-3xl font-bold">{activeCount}</p>
             <div className="mt-4">
               <button
-                onClick={() => navigate("/admin/karyawan")}
+                onClick={() => navigate("/admin/employees")}
                 className="px-4 py-2 rounded-md bg-indigo-600 text-white hover:bg-indigo-700"
               >
                 Kelola Karyawan

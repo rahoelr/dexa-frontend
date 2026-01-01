@@ -1,6 +1,5 @@
 import { useAuth } from "./auth/AuthContext"
-import { useState } from "react"
-import { BrowserRouter, Routes, Route } from "react-router-dom"
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom"
 import Login from "./pages/Login"
 import DashboardEmployee from "./pages/DashboardEmployee"
 import AttendanceHistory from "./pages/AttendanceHistory"
@@ -12,11 +11,10 @@ import AdminEmployeeNew from "./pages/AdminEmployeeNew"
 import AdminEmployeeDetail from "./pages/AdminEmployeeDetail"
 import AdminEmployeeEdit from "./pages/AdminEmployeeEdit"
 import NavigatorRegistrar from "./components/NavigatorRegistrar"
+import { navigate } from "./lib/navigation"
 
 function App() {
   const { auth, logout } = useAuth()
-  const [view, setView] = useState<"dashboard" | "history">("dashboard")
-  const [adminView, setAdminView] = useState<"monitoring" | "employees">("monitoring")
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -29,7 +27,8 @@ function App() {
           </Routes>
         </BrowserRouter>
       ) : auth.user.role === "EMPLOYEE" ? (
-        <div>
+        <BrowserRouter>
+          <NavigatorRegistrar />
           <div className="p-3 flex justify-end">
             <button
               onClick={logout}
@@ -38,16 +37,42 @@ function App() {
               Keluar
             </button>
           </div>
-          {view === "dashboard" ? (
-            <DashboardEmployee
-              onGoRiwayat={() => {
-                setView("history")
-              }}
+          <Routes>
+            <Route
+              path="/"
+              element={
+                <ProtectedRoute role="EMPLOYEE">
+                  <DashboardEmployee
+                    onGoRiwayat={() => {
+                      navigate("/employee/history")
+                    }}
+                  />
+                </ProtectedRoute>
+              }
             />
-          ) : (
-            <AttendanceHistory />
-          )}
-        </div>
+            <Route
+              path="/employee"
+              element={
+                <ProtectedRoute role="EMPLOYEE">
+                  <DashboardEmployee
+                    onGoRiwayat={() => {
+                      navigate("/employee/history")
+                    }}
+                  />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/employee/history"
+              element={
+                <ProtectedRoute role="EMPLOYEE">
+                  <AttendanceHistory />
+                </ProtectedRoute>
+              }
+            />
+            <Route path="/employee/*" element={<Navigate to="/employee" replace />} />
+          </Routes>
+        </BrowserRouter>
       ) : (
         <BrowserRouter>
           <NavigatorRegistrar />
@@ -70,14 +95,6 @@ function App() {
             />
             <Route
               path="/admin/employees"
-              element={
-                <ProtectedRoute role="ADMIN">
-                  <AdminEmployees />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/admin/karyawan"
               element={
                 <ProtectedRoute role="ADMIN">
                   <AdminEmployees />
