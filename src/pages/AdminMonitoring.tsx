@@ -40,7 +40,12 @@ export default function AdminMonitoring() {
       const res = listAttendanceAdmin({
         startDate,
         endDate,
-        status,
+        status:
+          status === "PRESENT_ON_TIME"
+            ? "ON_TIME"
+            : status === "PRESENT_LATE"
+            ? "LATE"
+            : status,
         department: department || undefined,
         search,
         page,
@@ -125,4 +130,3 @@ export default function AdminMonitoring() {
     </div>
   )
 }
-

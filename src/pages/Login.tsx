@@ -1,11 +1,13 @@
 import { FormEvent, useState } from "react"
 import { useAuth } from "../auth/AuthContext"
 import { validateLogin } from "../utils/validateLogin"
+import { useNavigate } from "react-router-dom"
 
 type Status = "idle" | "loading" | "error"
 
 export default function Login() {
   const { auth, login } = useAuth()
+  const navigate = useNavigate()
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [status, setStatus] = useState<Status>("idle")
@@ -23,6 +25,14 @@ export default function Login() {
     try {
       setStatus("loading")
       await login(email, password)
+      try {
+        const raw = localStorage.getItem("auth")
+        const parsed = raw ? (JSON.parse(raw) as { user?: { role?: import("../types").Role } }) : null
+        const role = parsed?.user?.role ?? auth.user?.role
+        navigate(role === "ADMIN" ? "/admin" : "/", { replace: true })
+      } catch {
+        navigate("/", { replace: true })
+      }
       setStatus("idle")
     } catch (err) {
       setErrorMessage("Kredensial salah atau server tidak tersedia")

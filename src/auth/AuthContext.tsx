@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useMemo, useState } from "react"
 import { login as apiLogin } from "../lib/api"
 import type { AuthUser } from "../types"
+import { navigate } from "../lib/navigation"
 
 type AuthState = {
   user: AuthUser | null
@@ -36,6 +37,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     writeStorage(auth)
   }, [auth])
+  useEffect(() => {
+    function onUnauthorized() {
+      setAuth({ user: null, token: null })
+    }
+    if (typeof window !== "undefined") {
+      window.addEventListener("dexAuthUnauthorized", onUnauthorized)
+      return () => window.removeEventListener("dexAuthUnauthorized", onUnauthorized)
+    }
+    return
+  }, [])
 
   const value = useMemo<AuthContextValue>(
     () => ({
@@ -46,6 +57,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       },
       logout() {
         setAuth({ user: null, token: null })
+        try {
+          localStorage.removeItem("auth")
+        } catch {}
+        navigate("/login", { replace: true })
       },
     }),
     [auth]
@@ -59,4 +74,3 @@ export function useAuth() {
   if (!ctx) throw new Error("useAuth must be used within AuthProvider")
   return ctx
 }
-

@@ -66,3 +66,19 @@ export type Attendance = {
   description?: string
   createdAt?: string
 }
+
+export type AdminEmployee = {
+  id: number
+  name: string
+  email: string
+  role: "EMPLOYEE"
+  isActive: boolean
+  createdAt: string
+}
+
+export type EmployeesList = {
+  items: AdminEmployee[]
+  page: number
+  limit: number
+  total: number
+}

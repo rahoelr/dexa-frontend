@@ -1,51 +1,108 @@
-const API_BASE = import.meta.env.VITE_API_BASE_URL
-
-async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(`${API_BASE}${path}`, {
-    headers: { "Content-Type": "application/json" },
-    ...init,
-  })
-  if (!res.ok) throw new Error(`HTTP ${res.status}`)
-  return res.json() as Promise<T>
-}
+import http from "./http"
 
 export function getUsers() {
-  return request<import("../types").User[]>("/users")
+  return http.get<import("../types").User[]>("/users").then((r) => r.data)
 }
 
 export function createUser(payload: Partial<import("../types").User>) {
-  return request<import("../types").User>("/users", {
-    method: "POST",
-    body: JSON.stringify(payload),
-  })
+  return http.post<import("../types").User>("/users", payload).then((r) => r.data)
 }
 
 export async function login(email: string, password: string) {
-  try {
-    return await request<{ token: string; user: import("../types").AuthUser }>("/auth/login", {
-      method: "POST",
-      body: JSON.stringify({ email, password }),
-    })
-  } catch {
-    const role: import("../types").Role = email.toLowerCase().includes("admin") ? "ADMIN" : "EMPLOYEE"
-    return {
-      token: "dev-token",
-      user: {
-        id: "dev-user",
-        name: email.split("@")[0] || "User",
-        email,
-        role,
-      },
-    }
+  const { data } = await http.post<{ access_token: string }>("/auth/login", { email, password })
+  const token = data.access_token
+  const me = await http.get<{ sub?: number; email?: string; role?: import("../types").Role }>("/auth/me", {
+    headers: { Authorization: `Bearer ${token}` },
+  })
+  const emailAddr = me.data.email || email
+  const name = emailAddr.split("@")[0] || "User"
+  const user: import("../types").AuthUser = {
+    id: String(me.data.sub ?? "unknown"),
+    name,
+    email: emailAddr,
+    role: me.data.role ?? "EMPLOYEE",
   }
+  return { token, user }
 }
 
-export async function getAttendanceToday() {
-  try {
-    return await request<import("../types").AttendanceToday>("/attendance/today")
-  } catch {
-    return {
-      status: "ABSENT",
-    } as import("../types").AttendanceToday
+export async function getMe() {
+  const { data } = await http.get<{ sub?: number; email?: string; role?: import("../types").Role }>("/auth/me")
+  const emailAddr = data.email || ""
+  const name = emailAddr ? emailAddr.split("@")[0] : "User"
+  const user: import("../types").AuthUser = {
+    id: String(data.sub ?? "unknown"),
+    name,
+    email: emailAddr,
+    role: data.role ?? "EMPLOYEE",
   }
+  return user
+}
+
+export async function getMyAttendance(params: {
+  from: string
+  to: string
+  page?: number
+  pageSize?: number
+}) {
+  const { from, to, page = 1, pageSize = 20 } = params
+  const { data } = await http.get<{
+    items: import("../types").Attendance[]
+    page: number
+    pageSize: number
+    total: number
+  }>("/attendance/me", {
+    params: { from, to, page, pageSize },
+  })
+  return data
+}
+
+export async function checkIn(payload: { photoUrl?: string; description?: string }) {
+  const { data } = await http.post<import("../types").Attendance>("/attendance/check-in", payload)
+  return data
+}
+
+export async function checkOut(payload: { description?: string }) {
+  const { data } = await http.post<import("../types").Attendance>("/attendance/check-out", payload)
+  return data
+}
+
+export async function listEmployees(params: { search?: string; page?: number; limit?: number }) {
+  const { search = "", page = 1, limit = 10 } = params || {}
+  const { data } = await http.get<import("../types").EmployeesList>("/employees", {
+    params: { search, page, limit },
+  })
+  return data
+}
+
+export async function getEmployee(id: number) {
+  const { data } = await http.get<import("../types").AdminEmployee>(`/employees/${id}`)
+  return data
+}
+
+export async function createEmployee(payload: {
+  name: string
+  email: string
+  password: string
+  isActive?: boolean
+}) {
+  const { data } = await http.post<import("../types").AdminEmployee>("/employees", payload)
+  return data
+}
+
+export async function updateEmployee(
+  id: number,
+  payload: { name?: string; email?: string; password?: string; isActive?: boolean }
+) {
+  const { data } = await http.put<import("../types").AdminEmployee>(`/employees/${id}`, payload)
+  return data
+}
+
+export async function deleteEmployee(id: number, opts?: { hard?: boolean }) {
+  const hard = opts?.hard ? "true" : undefined
+  if (hard) {
+    const { data } = await http.delete<{ success: boolean }>(`/employees/${id}`, { params: { hard } })
+    return data
+  }
+  const { data } = await http.delete<import("../types").AdminEmployee>(`/employees/${id}`)
+  return data
 }

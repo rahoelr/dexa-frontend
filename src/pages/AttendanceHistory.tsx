@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react"
+import { useAuth } from "../auth/AuthContext"
 import DateRangePicker from "../components/DateRangePicker"
 import StatusFilter, { StatusFilterValue } from "../components/StatusFilter"
 import AttendanceTable from "../components/AttendanceTable"
 import Pagination from "../components/Pagination"
 import PhotoModal from "../components/PhotoModal"
-import { listAttendanceDummy } from "../lib/attendanceDummy"
+import { getMyAttendance } from "../lib/api"
 import type { AttendanceRecord } from "../types"
 
 function todayStr() {
@@ -12,6 +13,7 @@ function todayStr() {
 }
 
 export default function AttendanceHistory() {
+  const { logout } = useAuth()
   const [startDate, setStartDate] = useState(todayStr())
   const [endDate, setEndDate] = useState(todayStr())
   const [status, setStatus] = useState<StatusFilterValue>("ALL")
@@ -24,17 +26,43 @@ export default function AttendanceHistory() {
   const [photoSrc, setPhotoSrc] = useState<string | null>(null)
 
   function refetch() {
-    try {
-      setLoading(true)
-      setError(null)
-      const res = listAttendanceDummy({ startDate, endDate, status, page, pageSize })
-      setRecords(res.data)
-      setTotal(res.pagination.total)
-    } catch {
-      setError("Gagal memuat riwayat absensi")
-    } finally {
-      setLoading(false)
-    }
+    setLoading(true)
+    setError(null)
+    getMyAttendance({ from: startDate, to: endDate, page, pageSize })
+      .then((res) => {
+        const items: AttendanceRecord[] = res.items.map((it) => {
+          const mapStatus: Record<string, AttendanceRecord["status"]> = {
+            ON_TIME: "PRESENT_ON_TIME",
+            LATE: "PRESENT_LATE",
+            ABSENT: "ABSENT",
+          }
+          return {
+            date: it.date.slice(0, 10),
+            checkInTime: it.checkIn,
+            checkOutTime: it.checkOut,
+            status: mapStatus[it.status] ?? "ABSENT",
+            lateMinutes: undefined,
+            photoUrl: it.photoUrl,
+            notes: it.description,
+          }
+        })
+        const filtered = status === "ALL" ? items : items.filter((r) => r.status === status)
+        setRecords(filtered)
+        setTotal(res.total)
+      })
+      .catch((e) => {
+        if (e?.response?.status === 401) {
+          logout()
+          setError("Sesi berakhir, silakan login ulang")
+        } else if (e?.response?.status === 503) {
+          setError("Layanan tidak tersedia, coba lagi")
+        } else {
+          setError("Gagal memuat riwayat absensi")
+        }
+      })
+      .finally(() => {
+        setLoading(false)
+      })
   }
 
   useEffect(() => {
@@ -88,4 +116,3 @@ export default function AttendanceHistory() {
     </div>
   )
 }
-

@@ -3,7 +3,7 @@ import { useAuth } from "../auth/AuthContext"
 import CardStat from "../components/CardStat"
 import UploadFoto from "../components/UploadFoto"
 import ResultCard from "../components/ResultCard"
-import { readAttendanceToday, writeAttendanceToday } from "../utils/attendanceToday"
+import { getMyAttendance, checkIn, checkOut } from "../lib/api"
 import type { Attendance, AttendanceStatus } from "../types"
 
 export default function DashboardEmployee({
@@ -11,7 +11,7 @@ export default function DashboardEmployee({
 }: {
   onGoRiwayat: () => void
 }) {
-  const { auth } = useAuth()
+  const { auth, logout } = useAuth()
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [data, setData] = useState<Attendance | null>(null)
@@ -25,10 +25,22 @@ export default function DashboardEmployee({
     let mounted = true
     try {
       setLoading(true)
-      const res = readAttendanceToday()
-      if (mounted) setData(res)
-    } catch {
-      if (mounted) setError("Gagal memuat status absensi")
+      const today = new Date().toISOString().slice(0, 10)
+      getMyAttendance({ from: today, to: today, page: 1, pageSize: 20 })
+        .then((res) => {
+          const item = res.items.find((it) => it.date.slice(0, 10) === today) ?? null
+          if (mounted) setData(item)
+        })
+        .catch((e) => {
+          if (!mounted) return
+          if (e?.response?.status === 401) {
+            setError("Sesi berakhir, silakan login ulang")
+          } else if (e?.response?.status === 503) {
+            setError("Layanan tidak tersedia, coba lagi")
+          } else {
+            setError("Gagal memuat status absensi")
+          }
+        })
     } finally {
       if (mounted) setLoading(false)
     }
@@ -66,47 +78,53 @@ export default function DashboardEmployee({
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault()
     setSubmitError(null)
-    if (data && data.status !== "ABSENT") {
-      setSubmitError("Anda sudah absen hari ini")
-      setSubmitStatus("error")
-      return
-    }
-    if (!photoFile) {
-      setSubmitError("Foto wajib diunggah")
+    if (data && data.checkIn && !data.checkOut) {
+      setSubmitError("Anda sudah check-in hari ini")
       setSubmitStatus("error")
       return
     }
     try {
       setSubmitStatus("loading")
-      const photoUrl = await fileToDataUrl(photoFile)
-      const nowIso = new Date().toISOString()
-      const status: AttendanceStatus = new Date(nowIso).getHours() < 9 ? "ON_TIME" : "LATE"
-      const payload: Attendance = {
-        id: Date.now(),
-        userId: 1,
-        date: nowIso.slice(0, 10),
-        checkIn: nowIso,
-        photoUrl,
-        status,
-        description: notes || undefined,
-        createdAt: nowIso,
-      }
-      writeAttendanceToday(payload)
-      setData(payload)
+      const photoUrl = photoFile ? await fileToDataUrl(photoFile) : undefined
+      const res = await checkIn({ photoUrl, description: notes || undefined })
+      setData(res)
       setSubmitStatus("success")
-    } catch {
-      setSubmitError("Gagal menyimpan absensi")
+    } catch (e: any) {
+      const status = e?.response?.status
+      if (status === 409) {
+        setSubmitError("Anda sudah check-in hari ini")
+      } else if (status === 401) {
+        setSubmitError("Sesi berakhir, silakan login ulang")
+      } else if (status === 503) {
+        setSubmitError("Layanan tidak tersedia, coba lagi")
+      } else {
+        setSubmitError("Gagal menyimpan absensi")
+      }
       setSubmitStatus("error")
     }
   }
 
   function onCheckout() {
-    if (!data || !data.checkIn) return
-    if (data.checkOut) return
-    const nowIso = new Date().toISOString()
-    const updated: Attendance = { ...data, checkOut: nowIso }
-    writeAttendanceToday(updated)
-    setData(updated)
+    if (!data || !data.checkIn || data.checkOut) return
+    checkOut({ description: notes || undefined })
+      .then((res) => {
+        setData(res)
+      })
+      .catch((e) => {
+        const status = e?.response?.status
+        if (status === 400) {
+          setSubmitError("Anda belum check-in")
+        } else if (status === 409) {
+          setSubmitError("Anda sudah check-out")
+        } else if (status === 401) {
+          setSubmitError("Sesi berakhir, silakan login ulang")
+        } else if (status === 503) {
+          setSubmitError("Layanan tidak tersedia, coba lagi")
+        } else {
+          setSubmitError("Gagal menyimpan absensi")
+        }
+        setSubmitStatus("error")
+      })
   }
 
   return (
@@ -121,7 +139,7 @@ export default function DashboardEmployee({
         <section>
           <CardStat title="Status Hari Ini" value={statValue} description={statDesc} />
         </section>
-        {data?.status === "ABSENT" || !data ? (
+        {!data || (!data.checkIn && !data.checkOut) ? (
           <section>
             <form className="space-y-4" onSubmit={onSubmit}>
               <div className="rounded-lg border bg-white p-4 space-y-4">
