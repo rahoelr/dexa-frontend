@@ -8,6 +8,7 @@ import CardStat from "../components/CardStat"
 import { getAdminAttendance, getEmployee } from "../lib/api"
 import { summarize } from "../utils/adminSummary"
 import type { AttendanceAdminRecord } from "../types"
+import BackButton from "../components/BackButton"
 
 function todayStr() {
   return new Date().toISOString().slice(0, 10)
@@ -94,7 +95,10 @@ export default function AdminMonitoring() {
   return (
     <div className="p-6">
       <header>
-        <h1 className="text-xl font-semibold">Monitoring Absensi Karyawan</h1>
+        <div className="flex items-center justify-between">
+          <BackButton />
+          <h1 className="text-xl font-semibold">Monitoring Absensi Karyawan</h1>
+        </div>
         <p className="text-sm text-gray-600">Pantau kehadiran berdasarkan tanggal dan status.</p>
       </header>
       <main className="mt-6 space-y-6">

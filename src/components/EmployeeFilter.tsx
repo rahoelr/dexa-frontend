@@ -38,11 +38,10 @@ export default function EmployeeFilter({
           type="text"
           value={search}
           onChange={(e) => onChange({ department, search: e.target.value })}
-          placeholder="Contoh: Andi atau 10001"
+          placeholder="Contoh: rahul atau 10001"
           className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
         />
       </div>
     </div>
   )
 }
-

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react"
 import { useNavigate, useParams } from "react-router-dom"
 import { getEmployee, updateEmployee } from "../lib/api"
+import BackButton from "../components/BackButton"
 
 export default function AdminEmployeeEdit() {
   const navigate = useNavigate()
@@ -76,7 +77,10 @@ export default function AdminEmployeeEdit() {
 
   return (
     <div className="p-6">
-      <h1 className="text-xl font-semibold">Edit Karyawan</h1>
+      <div className="flex items-center justify-between">
+        <BackButton />
+        <h1 className="text-xl font-semibold">Edit Karyawan</h1>
+      </div>
       {error ? (
         <p className="mt-3 text-sm text-red-600">{error}</p>
       ) : loading ? (

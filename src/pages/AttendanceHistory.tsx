@@ -7,6 +7,7 @@ import Pagination from "../components/Pagination"
 import PhotoModal from "../components/PhotoModal"
 import { getMyAttendance } from "../lib/api"
 import type { AttendanceRecord } from "../types"
+import BackButton from "../components/BackButton"
 
 function todayStr() {
   return new Date().toISOString().slice(0, 10)
@@ -73,7 +74,10 @@ export default function AttendanceHistory() {
   return (
     <div className="p-6">
       <header>
-        <h1 className="text-xl font-semibold">Riwayat Absensi</h1>
+        <div className="flex items-center justify-between">
+          <BackButton />
+          <h1 className="text-xl font-semibold">Riwayat Absensi</h1>
+        </div>
         <p className="text-sm text-gray-600">Lihat riwayat absen Anda berdasarkan tanggal.</p>
       </header>
       <main className="mt-6 space-y-6">

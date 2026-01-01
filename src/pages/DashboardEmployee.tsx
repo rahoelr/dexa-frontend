@@ -5,6 +5,7 @@ import UploadFoto from "../components/UploadFoto"
 import ResultCard from "../components/ResultCard"
 import { getMyAttendance, checkIn, checkOut } from "../lib/api"
 import type { Attendance, AttendanceStatus } from "../types"
+import BackButton from "../components/BackButton"
 
 export default function DashboardEmployee({
   onGoRiwayat,
@@ -134,6 +135,7 @@ export default function DashboardEmployee({
           <h1 className="text-xl font-semibold">Dashboard Karyawan</h1>
           <p className="text-sm text-gray-600">Selamat datang, {auth.user?.name}.</p>
         </div>
+        <BackButton />
       </header>
       <main className="mt-6 space-y-6">
         <section>

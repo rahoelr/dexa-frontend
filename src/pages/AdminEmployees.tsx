@@ -6,6 +6,7 @@ import Toast from "../components/Toast"
 import ConfirmModal from "../components/ConfirmModal"
 import AddEmployeeModal from "../components/AddEmployeeModal"
 import EmployeeDetailModal from "../components/EmployeeDetailModal"
+import BackButton from "../components/BackButton"
 
 export default function AdminEmployees() {
   const navigate = useNavigate()
@@ -114,8 +115,10 @@ export default function AdminEmployees() {
   return (
     <div className="p-6">
       <header>
-        <h1 className="text-xl font-semibold">Manajemen Karyawan</h1>
-        <p className="text-sm text-gray-600">Kelola data karyawan: tambah, edit, nonaktifkan, hapus permanen, dan cari.</p>
+        <div className="flex items-center justify-between">
+          <BackButton />
+          <h1 className="text-xl font-semibold">Manajemen Karyawan</h1>
+        </div>
       </header>
       <main className="mt-6 space-y-6">
         <section className="flex flex-col gap-4">

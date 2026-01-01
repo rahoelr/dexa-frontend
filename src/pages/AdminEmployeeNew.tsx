@@ -1,6 +1,7 @@
 import { useState } from "react"
 import { useNavigate } from "react-router-dom"
 import { createEmployee } from "../lib/api"
+import BackButton from "../components/BackButton"
 
 export default function AdminEmployeeNew() {
   const navigate = useNavigate()
@@ -46,7 +47,10 @@ export default function AdminEmployeeNew() {
 
   return (
     <div className="p-6">
-      <h1 className="text-xl font-semibold">Tambah Karyawan</h1>
+      <div className="flex items-center justify-between">
+        <BackButton />
+        <h1 className="text-xl font-semibold">Tambah Karyawan</h1>
+      </div>
       <div className="mt-4 space-y-3 max-w-md">
         <div>
           <label className="block text-sm font-medium text-gray-700">Nama</label>

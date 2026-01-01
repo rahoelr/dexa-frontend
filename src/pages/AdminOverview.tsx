@@ -1,19 +1,21 @@
 import { useEffect, useState } from "react"
 import { navigate } from "../lib/navigation"
 import { listEmployees, getAdminAttendance, getEmployee, getAdminAttendanceToday } from "../lib/api"
+import EmployeeSearchInput from "../components/EmployeeSearchInput"
 import MonitoringTable from "../components/MonitoringTable"
 import Pagination from "../components/Pagination"
 import PhotoModal from "../components/PhotoModal"
 import CardStat from "../components/CardStat"
+import BackButton from "../components/BackButton"
 
 export default function AdminOverview() {
   const [activeCount, setActiveCount] = useState<number>(0)
-  const [latest, setLatest] = useState<import("../types").AdminEmployee[]>([])
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [fromDate, setFromDate] = useState(new Date().toISOString().slice(0, 10))
   const [toDate, setToDate] = useState(new Date().toISOString().slice(0, 10))
-  const [filterUserId, setFilterUserId] = useState<string>("")
+  const [searchName, setSearchName] = useState<string>("")
+  const [selectedUser, setSelectedUser] = useState<import("../types").AdminEmployee | null>(null)
   const [attLoading, setAttLoading] = useState(false)
   const [attError, setAttError] = useState<string | null>(null)
   const [attRecords, setAttRecords] = useState<import("../types").AttendanceAdminRecord[]>([])
@@ -36,10 +38,6 @@ export default function AdminOverview() {
         setError(null)
         const res = await listEmployees({ page: 1, limit: 5 })
         setActiveCount(res.total)
-        const items = [...res.items].sort((a, b) => {
-          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-        })
-        setLatest(items.slice(0, 5))
       } catch (e) {
         setError("Gagal memuat ringkasan")
       } finally {
@@ -53,7 +51,7 @@ export default function AdminOverview() {
       try {
         setAttLoading(true)
         setAttError(null)
-        const userId = filterUserId.trim() ? Number(filterUserId.trim()) : undefined
+        const userId = selectedUser?.id
         const res = await getAdminAttendance({
           from: fromDate,
           to: toDate,
@@ -111,7 +109,7 @@ export default function AdminOverview() {
         setAttLoading(false)
       }
     })()
-  }, [fromDate, toDate, filterUserId, attPage, attPageSize])
+  }, [fromDate, toDate, selectedUser, attPage, attPageSize])
 
   useEffect(() => {
     ;(async () => {
@@ -145,8 +143,10 @@ export default function AdminOverview() {
 
   return (
     <div className="p-6">
-      <h1 className="text-xl font-semibold">Dashboard Admin</h1>
-      <p className="text-sm text-gray-600">Ringkasan karyawan aktif dan terbaru.</p>
+      <div className="flex items-center justify-between">
+        <BackButton />
+        <h1 className="text-xl font-semibold">Dashboard Admin</h1>
+      </div>
       <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-4">
         <CardStat title="Hadir Tepat Waktu (Hari Ini)" value={`${todaySummary.onTime}`} />
         <CardStat title="Terlambat (Hari Ini)" value={`${todaySummary.late}`} />
@@ -159,7 +159,7 @@ export default function AdminOverview() {
       ) : loading ? (
         <p className="mt-4 text-sm text-gray-600">Memuat...</p>
       ) : (
-        <div className="mt-6 grid gap-6 md:grid-cols-2">
+        <div className="mt-6 grid gap-6 md:grid-cols-3">
           <div className="rounded-lg border bg-white p-4">
             <p className="text-sm text-gray-600">Jumlah Karyawan</p>
             <p className="mt-2 text-3xl font-bold">{activeCount}</p>
@@ -172,20 +172,8 @@ export default function AdminOverview() {
               </button>
             </div>
           </div>
-          <div className="rounded-lg border bg-white p-4">
-            <p className="text-sm text-gray-600">List Karyawan</p>
-            <ul className="mt-2 space-y-2">
-              {latest.map((e) => (
-                <li key={e.id} className="flex justify-between text-sm">
-                  <span className="text-gray-800">{e.name}</span>
-                  <span className="text-gray-500">{new Date(e.createdAt).toLocaleDateString()}</span>
-                </li>
-              ))}
-              {latest.length === 0 ? <li className="text-gray-600">Tidak ada data</li> : null}
-            </ul>
-          </div>
           <div className="rounded-lg border bg-white p-4 md:col-span-2">
-            <div className="flex items-end gap-3">
+            <div className="flex flex-wrap items-end gap-3">
               <div>
                 <label className="block text-sm font-medium text-gray-700">Dari Tanggal</label>
                 <input
@@ -211,17 +199,36 @@ export default function AdminOverview() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700">Filter User ID (opsional)</label>
-                <input
-                  type="number"
-                  value={filterUserId}
-                  onChange={(e) => {
-                    setFilterUserId(e.target.value)
-                    setAttPage(1)
-                  }}
-                  placeholder="Contoh: 2"
-                  className="mt-1 block w-36 rounded-md border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                />
+                <label className="block text-sm font-medium text-gray-700">Cari Nama Karyawan</label>
+                <div className="flex items-center gap-2">
+                  <EmployeeSearchInput
+                    value={searchName}
+                    onChange={(v) => {
+                      setSearchName(v)
+                      setSelectedUser(null)
+                      setAttPage(1)
+                    }}
+                    onSelect={(emp) => {
+                      setSelectedUser(emp)
+                      setSearchName(emp ? emp.name : "")
+                      setAttPage(1)
+                    }}
+                    placeholder="Contoh: rahul"
+                  />
+                  {selectedUser ? (
+                    <button
+                      onClick={() => {
+                        setSelectedUser(null)
+                        setSearchName("")
+                        setAttPage(1)
+                      }}
+                      className="px-3 py-2 rounded-md border text-sm hover:bg-gray-50"
+                    >
+                      Hapus
+                    </button>
+                  ) : null}
+                </div>
+                {selectedUser ? <p className="mt-1 text-xs text-gray-600">Terpilih: {selectedUser.name}</p> : null}
               </div>
             </div>
             <div className="mt-4">
