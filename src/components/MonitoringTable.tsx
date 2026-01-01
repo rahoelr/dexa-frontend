@@ -28,7 +28,8 @@ export default function MonitoringTable({
           <tr>
             <th className="px-4 py-2">Nama</th>
             <th className="px-4 py-2">Tanggal</th>
-            <th className="px-4 py-2">Jam</th>
+            <th className="px-4 py-2">Check-In</th>
+            <th className="px-4 py-2">Check-Out</th>
             <th className="px-4 py-2">Status</th>
             <th className="px-4 py-2">Foto</th>
             <th className="px-4 py-2">Catatan</th>
@@ -40,6 +41,7 @@ export default function MonitoringTable({
               <td className="px-4 py-2">{r.employee.name}</td>
               <td className="px-4 py-2">{r.date}</td>
               <td className="px-4 py-2">{r.checkIn ? new Date(r.checkIn).toLocaleTimeString() : "-"}</td>
+              <td className="px-4 py-2">{r.checkOut ? new Date(r.checkOut).toLocaleTimeString() : "-"}</td>
               <td className="px-4 py-2">
                 <StatusBadge status={r.status} />
               </td>
