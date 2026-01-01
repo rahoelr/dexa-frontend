@@ -194,7 +194,7 @@ export default function AdminEmployees() {
                       <td className="px-4 py-2 text-sm">
                         <div className="flex gap-2">
                           <button className="px-2 py-1 rounded bg-gray-200 hover:bg-gray-300" onClick={() => setDetailId(e.id)}>
-                            Detail
+                            Detail Riwayat Absensi Karyawan
                           </button>
                           <button
                             className="px-2 py-1 rounded bg-indigo-600 text-white hover:bg-indigo-700"
